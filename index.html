@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduTrack | Academic Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <h2 class="logo">EduTrack</h2>
+        <p class="sidebar-label">ACADEMIC PORTAL</p>
+
+        <nav>
+            <a href="#" class="nav-link active">Dashboard</a>
+            <a href="#students" class="nav-link">Students</a>
+            <a href="#analytics" class="nav-link">Analytics</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>EduTrack v1.0</p>
+            <small>Academic Management System</small>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <h1>Academic Dashboard</h1>
+                <p>Monitor student performance and academic progress.</p>
+            </div>
+            <div class="profile">
+                <span class="avatar">AD</span>
+                <span>Administrator</span>
+            </div>
+        </header>
+
+        <!-- Statistics Cards -->
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <p>Total Students</p>
+                <h2 id="totalStudents">0</h2>
+                <span>Enrolled students</span>
+            </div>
+
+            <div class="stat-card">
+                <p>Average GPA</p>
+                <h2 id="averageGPA">0.00</h2>
+                <span>Out of 4.00</span>
+            </div>
+
+            <div class="stat-card">
+                <p>Pass Rate</p>
+                <h2 id="passRate">0%</h2>
+                <span>Students with GPA ≥ 2.00</span>
+            </div>
+
+            <div class="stat-card">
+                <p>At-Risk Students</p>
+                <h2 id="atRisk">0</h2>
+                <span>GPA below 2.00</span>
+            </div>
+
+        </section>
+
+        <!-- Student Table -->
+        <section class="content-card" id="students">
+
+            <div class="section-header">
+                <div>
+                    <h2>Student Records</h2>
+                    <p>View and manage student information.</p>
+                </div>
+                <button class="primary-btn" id="addStudentBtn">
+                    + Add Student
+                </button>
+            </div>
+
+            <div class="table-toolbar">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search student name or ID..."
+                >
+                <select id="statusFilter">
+                    <option value="all">All Students</option>
+                    <option value="pass">Passing</option>
+                    <option value="risk">At Risk</option>
+                </select>
+                
+<select id="programmeFilter" aria-label="Filter by programme">
+    <option value="all">All Programmes</option>
+    <option value="Information Security">
+        Information Security
+    </option>
+    <option value="Computer Science">
+        Computer Science
+    </option>
+    <option value="Software Engineering">
+        Software Engineering
+    </option>
+</select>
+
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Programme</th>
+                            <th>GPA</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody"></tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- Analytics -->
+        <section class="content-card" id="analytics">
+            <div class="section-header">
+                <div>
+                    <h2>Performance Overview</h2>
+                    <p>GPA distribution of enrolled students.</p>
+                </div>
+            </div>
+
+            <div id="gradeChart" class="chart-container"></div>
+            
+<div class="chart-legend">
+    <span><i class="legend-dot risk-dot"></i>
+        At Risk (GPA below 2.00)</span>
+    <span><i class="legend-dot pass-dot"></i>
+        Passing (GPA 2.00 and above)</span>
+</div>
+
+        </section>
+
+<!-- Student Form Modal -->
+<div class="modal-overlay" id="studentModal" hidden>
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle">Add Student</h2>
+            <button type="button" id="closeModalBtn"
+                    class="close-btn">&times;</button>
+        </div>
+
+        <form id="studentForm">
+            <label for="studentId">Student ID</label>
+            <input type="text" id="studentId"
+                   placeholder="e.g. S009"
+                   maxlength="20" required>
+
+            <label for="studentName">Full Name</label>
+            <input type="text" id="studentName"
+                   placeholder="Enter student name"
+                   maxlength="100" required>
+
+            <label for="studentProgramme">Programme</label>
+            <select id="studentProgramme" required>
+                <option value="">Select programme</option>
+                <option value="Information Security">
+                    Information Security
+                </option>
+                <option value="Computer Science">
+                    Computer Science
+                </option>
+                <option value="Software Engineering">
+                    Software Engineering
+                </option>
+            </select>
+
+            <label for="studentGPA">GPA (0.00 - 4.00)</label>
+            <input type="number" id="studentGPA"
+                   min="0" max="4" step="0.01"
+                   placeholder="e.g. 3.50" required>
+
+            <div class="form-actions">
+                <button type="button" id="cancelBtn"
+                        class="secondary-btn">
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-btn">
+                    Save Student
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    </main>
+</div>
+
+</body>
+</html>
