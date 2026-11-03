@@ -630,3 +630,68 @@ select:focus-visible {
 .pass-dot {
     background: #2563eb;
 }
+
+
+
+/* Admin Authentication */
+
+.auth-panel {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.auth-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.auth-header h3 {
+    margin: 0 0 5px;
+    font-size: 16px;
+}
+
+.auth-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    max-width: 400px;
+}
+
+.login-form input {
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+#loginMessage {
+    font-size: 13px;
+    color: #dc2626;
+}
+
+/* Respect hidden attribute */
+.auth-panel [hidden] {
+    display: none !important;
+}
+
+
+
+/* Hide editing controls for public visitors */
+
+body:not([data-is-admin="true"]) #addStudentBtn,
+body:not([data-is-admin="true"]) .action-buttons {
+    display: none !important;
+}

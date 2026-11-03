@@ -5,8 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduTrack | Academic Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+    
+<link rel="stylesheet" href="style.css">
+
+<!-- Supabase JavaScript Library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Your EduTrack JavaScript -->
+<script src="script.js" defer></script>
+
 </head>
 <body>
 
@@ -42,6 +49,49 @@
                 <span>Administrator</span>
             </div>
         </header>
+        
+<!-- Admin Authentication -->
+<section class="auth-panel">
+    <div class="auth-header">
+        <div>
+            <h3>Admin Access</h3>
+            <p id="authStatus">Viewing as Guest</p>
+        </div>
+
+        <button id="showLoginBtn" class="primary-btn">
+            Admin Login
+        </button>
+
+        <button id="logoutBtn" class="secondary-btn" hidden>
+            Log Out
+        </button>
+    </div>
+
+    <form id="loginForm" class="login-form" hidden>
+        <input
+            type="email"
+            id="adminEmail"
+            placeholder="Admin email"
+            autocomplete="username"
+            required
+        >
+
+        <input
+            type="password"
+            id="adminPassword"
+            placeholder="Password"
+            autocomplete="current-password"
+            required
+        >
+
+        <button type="submit" class="primary-btn">
+            Sign In
+        </button>
+
+        <p id="loginMessage" role="status"></p>
+    </form>
+</section>
+
 
         <!-- Statistics Cards -->
         <section class="stats-grid">

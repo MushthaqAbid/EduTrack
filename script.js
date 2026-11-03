@@ -1,6 +1,112 @@
 
 "use strict";
 
+
+const SUPABASE_URL = "https://lhnsdbemyogtsimteayl.supabase.co";
+
+// Replace this with your own publishable API key
+const SUPABASE_KEY = "sb_publishable_hbBXhNDdMlQw5XhyiAbp_A_qCUfnCOJ";
+
+// Create Supabase connection
+const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+// ----------------------------------
+// ADMIN AUTHENTICATION
+// ----------------------------------
+
+const showLoginBtn = document.getElementById("showLoginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const loginForm = document.getElementById("loginForm");
+const authStatus = document.getElementById("authStatus");
+const loginMessage = document.getElementById("loginMessage");
+
+// Your admin UID, copied from Authentication > Users
+const ADMIN_UID = "5734872e-d92f-4918-b90d-c890bdd8fd7a";
+
+async function updateAuthUI() {
+    const { data, error } = await db.auth.getUser();
+
+    const user = error ? null : data.user;
+    const isAdmin = user?.id === ADMIN_UID;
+
+    authStatus.textContent = isAdmin
+        ? "Signed in as Administrator"
+        : "Viewing as Guest";
+
+    showLoginBtn.hidden = isAdmin;
+    logoutBtn.hidden = !user;
+
+    // Hide the login form after successful login
+    if (isAdmin) {
+        loginForm.hidden = true;
+        loginMessage.textContent = "";
+        document.getElementById("adminPassword").value = "";
+    }
+
+    // Store the status for the CRUD interface later
+    document.body.dataset.isAdmin = String(isAdmin);
+    // Redraw the table when authentication changes
+    displayStudents();  
+}
+
+// Show login form
+showLoginBtn.addEventListener("click", () => {
+    loginForm.hidden = !loginForm.hidden;
+    loginMessage.textContent = "";
+});
+
+// Sign in using Supabase Authentication
+loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("adminEmail").value;
+    const password = document.getElementById("adminPassword").value;
+
+    loginMessage.textContent = "Signing in...";
+
+    const { error } = await db.auth.signInWithPassword({
+        email,
+        password
+    });
+
+    if (error) {
+        loginMessage.textContent = "Login failed. Check your credentials.";
+        return;
+    }
+
+    await updateAuthUI();
+
+    if (document.body.dataset.isAdmin !== "true") {
+        loginMessage.textContent =
+            "This account does not have administrator access.";
+    }
+});
+
+// Log out
+logoutBtn.addEventListener("click", async () => {
+    const { error } = await db.auth.signOut();
+
+    if (error) {
+        alert("Could not sign out. Please try again.");
+        return;
+    }
+
+    loginForm.hidden = true;
+    await updateAuthUI();
+});
+
+// Keep the interface in sync with authentication changes
+db.auth.onAuthStateChange(() => {
+    updateAuthUI();
+});
+
+// Check for an existing login when the page opens
+updateAuthUI();
+
+
 // ----------------------------------
 // 1. STUDENT DATA
 // ----------------------------------
@@ -59,7 +165,36 @@ function loadStudents() {
 }
 
 // The rest of the application will use this array
-let students = loadStudents();
+let students = [];
+
+
+async function loadStudentsFromDatabase() {
+    try {
+        const { data, error } = await db
+            .from("students")
+            .select("id, name, programme, gpa")
+            .order("id", { ascending: true });
+
+        if (error) {
+            throw error;
+        }
+
+        // Convert database GPA values into numbers
+        students = (data || []).map(student => ({
+            ...student,
+            gpa: Number(student.gpa)
+        }));
+
+        console.log("Loaded students from Supabase:", students);
+
+        refreshDashboard();
+
+    } catch (error) {
+        console.error("Error loading students:", error);
+        alert("Unable to load student records from Supabase.");
+    }
+}
+
 
 // Save the latest records to browser storage
 function saveStudents() {
@@ -382,8 +517,19 @@ function closeModal() {
 // 10. ADD OR UPDATE STUDENT
 // ----------------------------------
 
-function saveStudent(event) {
+
+
+async function saveStudent(event) {
     event.preventDefault();
+
+    // Check that the user is the administrator
+    const { data: authData, error: authError } =
+        await db.auth.getUser();
+
+    if (authError || authData.user?.id !== ADMIN_UID) {
+        alert("Only the administrator can modify records.");
+        return;
+    }
 
     const id = studentIdInput.value.trim().toUpperCase();
     const name = studentNameInput.value.trim();
@@ -391,60 +537,70 @@ function saveStudent(event) {
     const gpaText = studentGPAInput.value.trim();
     const gpa = Number(gpaText);
 
-    // Validate inputs
-    if (!id || !name || !programme || gpaText === "" ||
-        !Number.isFinite(gpa) || gpa < 0 || gpa > 4) {
+    // Validate user input
+    if (!id || !name || !programme ||
+        gpaText === "" ||
+        !Number.isFinite(gpa) ||
+        gpa < 0 || gpa > 4 ||
+        !/^\d+(\.\d{1,2})?$/.test(gpaText)) {
+
         alert("Please enter valid student information.");
         return;
     }
 
-    // Allow a maximum of 2 decimal places
-    if (!/^\d+(\.\d{1,2})?$/.test(gpaText)) {
-        alert("GPA must have at most 2 decimal places.");
-        return;
-    }
+    try {
+        let result;
 
-    if (editingStudentId === null) {
-        // CREATE operation
-        const idExists = students.some(s => s.id === id);
+        if (editingStudentId === null) {
+            // CREATE: Add a record to Supabase
+            result = await db
+                .from("students")
+                .insert({ id, name, programme, gpa });
 
-        if (idExists) {
-            alert("This Student ID already exists.");
-            return;
+        } else {
+            // UPDATE: Modify an existing record
+            result = await db
+                .from("students")
+                .update({ name, programme, gpa })
+                .eq("id", editingStudentId)
+                .select("id");
+
+            if (!result.error && result.data.length === 0) {
+                throw new Error("Student not found or update denied.");
+            }
         }
 
-        students.push({
-            id: id,
-            name: name,
-            programme: programme,
-            gpa: gpa
-        });
+        if (result.error) throw result.error;
 
-    } else {
-        // UPDATE operation
-        const student = students.find(
-            s => s.id === editingStudentId
-        );
+        closeModal();
 
-        if (!student) {
-            alert("Student record not found.");
-            return;
-        }
+        // Reload the latest database records
+        await loadStudentsFromDatabase();
 
-        student.name = name;
-        student.programme = programme;
-        student.gpa = gpa;
+        alert("Student record saved successfully!");
+
+    } catch (error) {
+        console.error("Error saving student:", error);
+        alert("Unable to save student: " + error.message);
     }
-
-    closeModal();
-    refreshDashboard(true);
 }
+
 
 // ----------------------------------
 // 11. DELETE STUDENT
 // ----------------------------------
 
-function deleteStudent(id) {
+
+   
+async function deleteStudent(id) {
+    const { data: authData, error: authError } =
+        await db.auth.getUser();
+
+    if (authError || authData.user?.id !== ADMIN_UID) {
+        alert("Only the administrator can delete students.");
+        return;
+    }
+
     const student = students.find(s => s.id === id);
 
     if (!student) return;
@@ -455,24 +611,45 @@ function deleteStudent(id) {
 
     if (!confirmed) return;
 
-    students = students.filter(s => s.id !== id);
+    try {
+        const { data, error } = await db
+            .from("students")
+            .delete()
+            .eq("id", id)
+            .select("id");
 
-    refreshDashboard(true);
+        if (error) throw error;
+
+        if (data.length === 0) {
+            throw new Error("Student not found or deletion denied.");
+        }
+
+        // Retrieve latest records from Supabase
+        await loadStudentsFromDatabase();
+
+        alert("Student deleted successfully!");
+
+    } catch (error) {
+        console.error("Error deleting student:", error);
+        alert("Unable to delete student: " + error.message);
+    }
 }
+
+
 
 // ----------------------------------
 // 12. REFRESH ALL DASHBOARD COMPONENTS
 // ----------------------------------
 
 
-function refreshDashboard(save = false) {
+function refreshDashboard() {
     displayStudents();
     updateStatistics();
     displayChart();
 
-    if (save) {
-        saveStudents();
-    }
+    // if (save) {
+    //     saveStudents();
+    // }
 }
 
 
@@ -510,4 +687,5 @@ document.addEventListener("keydown", event => {
 });
 
 // Initial rendering
-refreshDashboard();
+// Initial rendering: load records from Supabase
+loadStudentsFromDatabase();
